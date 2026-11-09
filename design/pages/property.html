@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Property · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="property" data-title="Property" data-states="loading,error">
+  <div id="nav"></div>
+  <main class="container" id="main"></main>
+  <div id="footer"></div>
+
+  <!-- Photo viewer -->
+  <div class="modal fade" id="photos" tabindex="-1" aria-labelledby="photos-title" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content bg-dark border-0">
+      <div class="modal-header border-0"><h2 class="modal-title h6 text-white" id="photos-title">Photos</h2><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="modal-body p-0"><div id="carousel" class="carousel slide"><div class="carousel-inner" id="slides"></div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carousel" data-bs-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous photo</span></button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next photo</span></button></div></div>
+    </div></div>
+  </div>
+
+  <!-- Delete confirm (owner) -->
+  <div class="modal fade" id="del" tabindex="-1" aria-labelledby="del-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-body p-4 text-center">
+        <div class="empty-state border-0 bg-transparent p-0"><div class="icon text-danger"><i class="bi bi-trash3" aria-hidden="true"></i></div></div>
+        <h2 class="h5" id="del-title">Delete this listing?</h2>
+        <p class="text-muted">Its photos, likes and viewing requests are deleted too. This can't be undone.</p>
+        <div class="d-flex gap-2 justify-content-center"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep listing</button><button class="btn btn-danger">Delete listing</button></div>
+      </div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const id = Number(new URLSearchParams(location.search).get('id')) || 1
+    const p = ROB.byId(id) || LISTINGS[0]
+    const owner = p.ownerObj
+    const isMine = ROB.as === 'owner' && p.owner === ROB.user.user_id
+    const main = document.getElementById('main')
+    const imgs = p.images.map(ROB.IMG)
+    document.title = `${p.title} · RoB Property`
+
+    if (ROB.state === 'error') {
+      main.innerHTML = `<div class="py-5">${ROB.empty({ icon: 'house-x', title: 'This listing is not available', text: 'It may have been rented, sold or removed by the owner.', action: `<a class="btn btn-primary" href="${ROB.link('listings')}">Browse other homes</a>` })}</div>`
+    } else if (ROB.state === 'loading') {
+      main.innerHTML = `<div class="py-4" aria-busy="true"><div class="skeleton mb-3" style="height:28px;width:40%"></div><div class="skeleton" style="height:448px"></div>
+        <div class="row mt-4 g-4"><div class="col-lg-8"><div class="skeleton mb-2" style="height:20px"></div><div class="skeleton mb-2" style="height:20px;width:80%"></div></div><div class="col-lg-4"><div class="skeleton" style="height:240px"></div></div></div></div>`
+    } else {
+      const liked = LIKED_IDS.includes(p.property_id) && ROB.as !== 'guest'
+      const actions = isMine
+        ? `<a class="btn btn-outline-secondary" href="${ROB.link('listing-form', '&id=' + p.property_id)}"><i class="bi bi-pencil" aria-hidden="true"></i>Edit</a>
+           <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#del"><i class="bi bi-trash3" aria-hidden="true"></i>Delete</button>`
+        : `<button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard?.writeText(location.href);ROB.toast('Link copied')"><i class="bi bi-share" aria-hidden="true"></i>Share</button>
+           ${ROB.as === 'guest'
+             ? `<a class="btn btn-outline-secondary" href="${ROB.link('login')}"><i class="bi bi-heart" aria-hidden="true"></i>Save</a>`
+             : `<button class="btn btn-outline-secondary" type="button" data-like="${p.property_id}" aria-pressed="${liked}"><i class="bi bi-heart${liked ? '-fill text-danger' : ''}" aria-hidden="true"></i>${liked ? 'Saved' : 'Save'}</button>`}`
+
+      // Right column: who you are decides what you see
+      const slots = SLOTS.filter((s) => !s.is_booked)
+      let side
+      if (isMine) {
+        const reqs = APPOINTMENTS.filter((a) => a.property_id === p.property_id)
+        side = `<div class="panel"><div class="d-flex justify-content-between align-items-center mb-3"><h2 class="h5 mb-0">Your listing</h2>${ROB.statusBadge(p.status)}</div>
+          <div class="row g-2 mb-3"><div class="col-6"><div class="stat"><div class="n">${p.like_count}</div><div class="k">likes</div></div></div><div class="col-6"><div class="stat"><div class="n">${reqs.length}</div><div class="k">viewing requests</div></div></div></div>
+          <div class="d-grid gap-2"><a class="btn btn-primary" href="${ROB.link('requests')}">Review requests</a><a class="btn btn-outline-secondary" href="${ROB.link('availability')}">Manage viewing days</a>
+          <button class="btn btn-outline-secondary" type="button">Mark as rented</button></div></div>`
+      } else if (ROB.as === 'guest') {
+        side = `<div class="panel text-center"><div class="avatar mx-auto mb-2" style="width:56px;height:56px;font-size:1.1rem">${ROB.initials(owner.full_name)}</div>
+          <div class="fw-semibold">${owner.full_name}</div><div class="text-muted small mb-3">Owner · replies on WhatsApp</div>
+          <div class="panel-surface text-start mb-3 p-3"><i class="bi bi-lock me-2" aria-hidden="true"></i>Log in to see the owner's number and book a viewing.</div>
+          <div class="d-grid gap-2"><a class="btn btn-primary btn-lg" href="${ROB.link('login')}">Log in to contact</a><a class="btn btn-outline-secondary" href="${ROB.link('register')}">Create a free account</a></div></div>`
+      } else {
+        side = `<div class="panel">
+          <div class="d-flex align-items-center gap-3 mb-3"><span class="avatar" style="width:48px;height:48px">${ROB.initials(owner.full_name)}</span>
+            <div><div class="fw-semibold">${owner.full_name}</div><div class="text-muted small">Owner · +${owner.phone.replace(/(\d{2})(\d{2})(\d{3})(\d+)/, '$1 $2-$3 $4')}</div></div></div>
+          <a class="btn btn-whatsapp w-100 mb-4" href="https://wa.me/${owner.phone}?text=${encodeURIComponent('Hi, I saw "' + p.title + '" on RoB Property.')}" target="_blank" rel="noopener"><i class="bi bi-whatsapp" aria-hidden="true"></i>Chat on WhatsApp</a>
+          <form id="book" novalidate>
+            <h2 class="h5 mb-1">Book a viewing</h2><p class="text-muted small mb-3">Pick one of the owner's free days. They'll confirm by email.</p>
+            <fieldset><legend class="visually-hidden">Viewing day</legend>
+            <div class="slot-grid mb-3">${slots.slice(0, 6).map((s, i) => `<input type="radio" class="btn-check" name="slot" id="s${s.slot_id}" ${i === 0 ? 'checked' : ''}><label class="btn btn-outline-secondary" for="s${s.slot_id}"><span>${ROB.fmtDate(s.viewing_date, { weekday: 'short', day: 'numeric', month: 'short' })}</span><small>${ROB.fmtTime(s.viewing_time)}</small></label>`).join('')}</div></fieldset>
+            <label class="form-label" for="msg">Message <span class="text-muted fw-normal">(optional)</span></label>
+            <textarea class="form-control mb-1" id="msg" rows="3" maxlength="500" placeholder="Hi, I'd like to view this unit."></textarea>
+            <div class="form-text mb-3 text-end">0 / 500</div>
+            <button class="btn btn-primary w-100" type="submit">Request viewing</button>
+          </form></div>`
+      }
+
+      main.innerHTML = `
+        <nav aria-label="breadcrumb" class="pt-4"><ol class="breadcrumb small mb-3"><li class="breadcrumb-item"><a href="${ROB.link('home')}">Home</a></li><li class="breadcrumb-item"><a href="${ROB.link('listings')}">Properties</a></li><li class="breadcrumb-item"><a href="${ROB.link('listings')}">${p.city}</a></li><li class="breadcrumb-item active" aria-current="page">${p.title}</li></ol></nav>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+          <div><div class="d-flex gap-2 mb-2"><span class="badge-listing ${p.listing_type === 'sale' ? 'badge-sale' : 'badge-rent'}">For ${p.listing_type}</span>${p.status !== 'available' ? ROB.statusBadge(p.status) : ''}</div>
+            <h1 class="h2 mb-1">${p.title}</h1><p class="text-muted mb-0"><i class="bi bi-geo-alt" aria-hidden="true"></i> ${p.address}, ${p.city}</p></div>
+          <div class="d-flex gap-2">${actions}</div>
+        </div>
+
+        <div class="gallery mb-4 ${imgs.length >= 5 ? '' : imgs.length >= 3 ? 'g3' : 'g1'}">${imgs.slice(0, imgs.length >= 5 ? 5 : imgs.length >= 3 ? 3 : 1).map((src, i) => `<a href="#" data-bs-toggle="modal" data-bs-target="#photos" data-slide="${i}" aria-label="Open photo ${i + 1} of ${imgs.length}"><img src="${src}" alt=""></a>`).join('')}
+          <button class="btn btn-light btn-sm shadow-sm more" data-bs-toggle="modal" data-bs-target="#photos"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>All ${imgs.length} photos</button></div>
+
+        <div class="row g-5">
+          <div class="col-lg-8">
+            <div class="d-flex flex-wrap align-items-baseline gap-3 mb-3"><div class="price fs-2">${ROB.priceHTML(p)}</div>
+              ${p.listing_type === 'sale' ? `<span class="text-muted">RM ${Math.round(p.price / p.floor_area_sqm).toLocaleString()} per m²</span>` : ''}</div>
+            ${!isMine ? `<a class="btn btn-primary w-100 mb-4 d-lg-none" href="#contact">${ROB.as === 'guest' ? 'Contact owner' : 'Book a viewing'}<i class="bi bi-arrow-down" aria-hidden="true"></i></a>` : ''}
+            <div class="fact-grid mb-4">
+              <div class="fact"><div class="k">Bedrooms</div><div class="v">${p.bedrooms || 'Studio'}</div></div>
+              <div class="fact"><div class="k">Bathrooms</div><div class="v">${p.bathrooms}</div></div>
+              <div class="fact"><div class="k">Parking</div><div class="v">${p.parking_spaces}</div></div>
+              <div class="fact"><div class="k">Floor area</div><div class="v">${p.floor_area_sqm} m²</div></div>
+              <div class="fact"><div class="k">Type</div><div class="v">${ROB.typeLabel[p.property_type]}</div></div>
+              <div class="fact"><div class="k">Furnishing</div><div class="v">${p.is_furnished ? 'Furnished' : 'Unfurnished'}</div></div>
+            </div>
+            <h2 class="h4">About this home</h2>
+            <p class="fs-5 text-body" style="max-width:65ch">${p.description}</p>
+            <hr class="my-4">
+            <h2 class="h4">Location</h2>
+            <p class="text-muted">${p.address}, ${p.postcode} ${p.city}, ${p.state}</p>
+            <div id="map" class="rounded-3 border" style="height:340px" role="region" aria-label="Map of the property location"></div>
+            <hr class="my-4">
+            <p class="small text-muted mb-0">Listed ${p.days} days ago · <i class="bi bi-heart-fill text-danger" aria-hidden="true"></i> <span data-count="${p.property_id}">${p.like_count}</span> people saved this · Listing #${p.property_id}</p>
+          </div>
+          <aside class="col-lg-4" id="contact"><div class="sticky-side">${side}</div></aside>
+        </div>
+
+        <section class="section pb-0" aria-labelledby="similar-title">
+          <h2 id="similar-title" class="h4 mb-3">More homes in ${p.city}</h2><div id="similar"></div>
+        </section>
+
+        <details class="dev-notes">
+          <summary>Dev notes · Property detail (/properties/:id) · Jason</summary>
+          <ul class="mb-0 mt-2">
+            <li><code>properties.php?id=</code>. Guest: <code>owner.phone</code> is null → show the locked box. <code>is_mine</code> → Edit / Delete / stats instead of Save and booking. Switch "View as" in the mockup bar to see all three.</li>
+            <li>Slots: <code>slots.php?property_id=</code>. Submit: <code>POST appointments.php {slot_id, property_id, message}</code>; on <code>409</code> show "Sorry, this day was just booked" and reload the slots.</li>
+            <li>WhatsApp: <code>https://wa.me/&lt;phone&gt;?text=…</code>. Map: Leaflet + OpenStreetMap, hide the section when lat/lng are null.</li>
+            <li>Gallery: 5 photos (3 if the listing has 3–4, 1 if fewer), "All N photos" opens a Bootstrap carousel modal. Mobile shows the first photo only.</li>
+          </ul>
+        </details>`
+
+      document.getElementById('slides').innerHTML = imgs.map((src, i) => `<div class="carousel-item ${i ? '' : 'active'}"><img src="${src}" class="d-block w-100" style="max-height:75vh;object-fit:contain" alt="Photo ${i + 1} of ${imgs.length}"></div>`).join('')
+      ROB.grid(document.getElementById('similar'), LISTINGS.filter((x) => x.city === p.city && x.property_id !== p.property_id && x.status === 'available').slice(0, 3), { emptyOpts: { title: 'No other homes here yet', text: '' } })
+
+      const map = L.map('map', { scrollWheelZoom: false }).setView([p.latitude, p.longitude], 15)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map)
+      L.circle([p.latitude, p.longitude], { radius: 180, color: '#0f766e', fillOpacity: 0.2 }).addTo(map)
+
+      document.getElementById('book')?.addEventListener('submit', (e) => { e.preventDefault(); ROB.toast('Viewing requested. The owner will confirm soon.') })
+    }
+  </script>
+</body>
+</html>

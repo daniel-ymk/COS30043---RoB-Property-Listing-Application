@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Map search · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="map" data-title="Map search" data-states="loading,empty,error">
+  <div id="nav"></div>
+
+  <main class="map-layout">
+    <section class="results" aria-labelledby="map-title">
+      <h1 id="map-title" class="h4 mb-1">Map search</h1>
+      <p class="text-muted small mb-3" id="map-count" aria-live="polite"></p>
+      <div class="segmented w-100 mb-3" role="radiogroup" aria-label="Listing type">
+        <input type="radio" class="btn-check" name="lt" id="m-any" checked><label class="btn" for="m-any">All</label>
+        <input type="radio" class="btn-check" name="lt" id="m-rent"><label class="btn" for="m-rent">Rent</label>
+        <input type="radio" class="btn-check" name="lt" id="m-sale"><label class="btn" for="m-sale">Buy</label>
+      </div>
+      <div id="list"></div>
+      <details class="dev-notes mt-4">
+        <summary>Dev notes · Map (/map) · Jason</summary>
+        <ul class="mb-0 mt-2 ps-3">
+          <li>On load and on "Search this area": <code>map.php?north=&amp;south=&amp;east=&amp;west=</code> from <code>map.getBounds()</code>. Max 200 results.</li>
+          <li>Pins are <code>L.divIcon</code> price tags (amber rent, blue sale). Hovering a list item highlights its pin and the other way round.</li>
+          <li>The "Search this area" button only appears after the user pans or zooms.</li>
+          <li>Mobile: map on top (55vh), list below.</li>
+        </ul>
+      </details>
+    </section>
+    <div class="position-relative">
+      <button class="btn btn-light map-search-btn" type="button" id="area"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>Search this area</button>
+      <div id="map" role="region" aria-label="Map of listings"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const kl = LISTINGS.filter((p) => p.city === 'Kuala Lumpur' && p.status === 'available')
+    const list = document.getElementById('list')
+    const count = document.getElementById('map-count')
+    const short = (p) => p.listing_type === 'rent' ? `RM ${p.price < 1000 ? p.price : (p.price / 1000).toFixed(1).replace('.0', '') + 'k'}/mo` : `RM ${p.price >= 1e6 ? (p.price / 1e6).toFixed(2) + 'm' : Math.round(p.price / 1000) + 'k'}`
+
+    const map = L.map('map').setView([3.155, 101.69], 12)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map)
+
+    if (ROB.state === 'loading') {
+      count.textContent = 'Searching this area…'
+      list.innerHTML = Array(4).fill('<div class="mini-card" aria-hidden="true"><div class="skeleton" style="width:96px;height:72px"></div><div class="flex-grow-1"><div class="skeleton mb-2" style="height:18px;width:50%"></div><div class="skeleton" style="height:16px"></div></div></div>').join('')
+    } else if (ROB.state === 'error') {
+      list.innerHTML = ROB.errorBox('map results')
+    } else if (ROB.state === 'empty') {
+      count.textContent = 'No homes in this area'
+      list.innerHTML = ROB.empty({ icon: 'map', title: 'No homes in this area', text: 'Zoom out or move the map, then press "Search this area".' })
+    } else {
+      count.textContent = `${kl.length} homes in this area of Kuala Lumpur`
+      const pins = {}
+      list.innerHTML = kl.map((p) => `<a class="mini-card" href="${ROB.link('property', '&id=' + p.property_id)}" data-id="${p.property_id}">
+          <img src="${p.cover_image}" alt="" loading="lazy">
+          <div class="min-w-0"><div class="price">${ROB.priceHTML(p)}</div><div class="fw-semibold text-truncate" style="max-width:240px">${p.title}</div>${ROB.specs(p, 'small')}</div></a>`).join('')
+      kl.forEach((p) => {
+        pins[p.property_id] = L.marker([p.latitude, p.longitude], {
+          icon: L.divIcon({ className: '', html: `<div class="price-pin ${p.listing_type}">${short(p)}</div>`, iconSize: null }),
+          title: p.title, keyboard: true,
+        }).addTo(map).bindPopup(`<strong>${p.title}</strong><br>${ROB.money(p.price)}<br><a href="${ROB.link('property', '&id=' + p.property_id)}">View listing</a>`)
+      })
+      list.addEventListener('mouseover', (e) => {
+        const c = e.target.closest('.mini-card'); if (!c) return
+        document.querySelectorAll('.price-pin').forEach((x) => (x.style.background = ''))
+        pins[c.dataset.id].getElement().querySelector('.price-pin').style.background = 'var(--rob-primary-subtle)'
+      })
+    }
+    document.getElementById('area').addEventListener('click', () => ROB.toast('Searching this area…', 'arrow-repeat'))
+  </script>
+</body>
+</html>

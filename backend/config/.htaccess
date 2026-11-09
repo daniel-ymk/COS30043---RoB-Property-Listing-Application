@@ -1,0 +1,2 @@
+# Database settings are read by PHP only, never served to browsers.
+Require all denied

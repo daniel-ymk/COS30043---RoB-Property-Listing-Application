@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="compare" data-title="Compare" data-states="empty">
+  <div id="nav"></div>
+
+  <main class="container">
+    <div class="page-head d-flex flex-wrap justify-content-between align-items-end gap-3">
+      <div><h1 class="h2 mb-1">Compare homes</h1><p class="text-muted mb-0">Up to 4 listings side by side. The best value in each row is marked green.</p></div>
+      <button class="btn btn-outline-secondary" type="button" id="clear"><i class="bi bi-x-circle" aria-hidden="true"></i>Clear all</button>
+    </div>
+    <div id="out"></div>
+
+    <details class="dev-notes">
+      <summary>Dev notes · Compare (/compare) · Jason</summary>
+      <ul class="mb-0 mt-2">
+        <li>IDs live in a Pinia store (persisted to localStorage) and in the URL: <code>/compare?ids=1,3,10</code>. Data: <code>properties.php?ids=1,3,10</code>.</li>
+        <li>"Compare" checkbox on every <code>PropertyCard</code> adds or removes; a 5th shows a toast "You can compare up to 4 properties".</li>
+        <li>Table scrolls sideways on mobile, with the row labels sticky on the left.</li>
+        <li>Green = lowest price, lowest price per m², most bedrooms / bathrooms / parking / area. Prices are only ranked when every listing is rent, or every listing is sale.</li>
+      </ul>
+    </details>
+  </main>
+
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const out = document.getElementById('out')
+    const items = ROB.state === 'empty' ? [] : ROB.compareIds.map(ROB.byId).filter(Boolean)
+    if (!items.length) {
+      out.innerHTML = ROB.empty({ icon: 'layout-three-columns', title: 'Nothing to compare yet', text: 'Tick "Compare" on up to 4 listings, then come back here to see them side by side.',
+        action: `<a class="btn btn-primary" href="${ROB.link('listings')}">Browse properties</a>` })
+    } else {
+      const best = (key, dir = 'max') => { const v = items.map((p) => p[key]); return dir === 'max' ? Math.max(...v) : Math.min(...v) }
+      const ppsm = (p) => Math.round(p.price / p.floor_area_sqm)
+      const minP = Math.min(...items.map(ppsm))
+      // Rent and sale prices can't be ranked against each other
+      const sameType = items.every((p) => p.listing_type === items[0].listing_type)
+      const priceBest = (p) => sameType && items.length > 1 && p.price === best('price', 'min')
+      const cell = (p, key, dir) => `<td class="${items.length > 1 && p[key] === best(key, dir) ? 'best' : ''}">${p[key]}</td>`
+      const row = (label, fn) => `<tr><th scope="row">${label || '<span class="visually-hidden">Open listing</span>'}</th>${items.map(fn).join('')}</tr>`
+      const free = 4 - items.length
+      out.innerHTML = `<div class="table-responsive border rounded-3"><table class="table compare-table mb-0" style="min-width:${220 + items.length * 240}px">
+        <thead><tr><th scope="col" class="bg-body-tertiary"><span class="visually-hidden">Feature</span></th>${items.map((p) => `<th scope="col" style="width:${80 / 4}%">
+          <div class="position-relative mb-2"><img src="${p.cover_image}" alt=""><button class="btn btn-light btn-sm position-absolute top-0 end-0 m-2" style="min-height:32px" aria-label="Remove ${p.title} from compare"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+          <span class="badge-listing ${p.listing_type === 'sale' ? 'badge-sale' : 'badge-rent'}">For ${p.listing_type}</span>
+          <a class="d-block fw-semibold text-body text-decoration-none mt-2" href="${ROB.link('property', '&id=' + p.property_id)}">${p.title}</a></th>`).join('')}
+          ${free ? `<th scope="col" class="align-middle text-center" style="width:20%"><a class="empty-state d-block p-4 text-decoration-none" href="${ROB.link('listings')}"><i class="bi bi-plus-circle fs-3 text-primary" aria-hidden="true"></i><div class="fw-semibold mt-2">Add a home</div><div class="small text-muted">${free} slot${free > 1 ? 's' : ''} left</div></a></th>` : ''}</tr></thead>
+        <tbody>
+          ${row('Price', (p) => `<td class="price ${priceBest(p) ? 'best' : ''}">${ROB.priceHTML(p)}</td>`)}
+          ${row('Price per m²', (p) => `<td class="${sameType && ppsm(p) === minP ? 'best' : ''}">RM ${ppsm(p).toLocaleString()}${p.listing_type === 'rent' ? ' /month' : ''}</td>`)}
+          ${row('Location', (p) => `<td>${p.address}<br><span class="text-muted">${p.city}</span></td>`)}
+          ${row('Type', (p) => `<td>${ROB.typeLabel[p.property_type]}</td>`)}
+          ${row('Bedrooms', (p) => cell(p, 'bedrooms'))}
+          ${row('Bathrooms', (p) => cell(p, 'bathrooms'))}
+          ${row('Parking', (p) => cell(p, 'parking_spaces'))}
+          ${row('Floor area (m²)', (p) => cell(p, 'floor_area_sqm'))}
+          ${row('Furnished', (p) => `<td>${p.is_furnished ? '<i class="bi bi-check-lg text-success" aria-hidden="true"></i> Yes' : '<span class="text-muted">No</span>'}</td>`)}
+          ${row('Saved by', (p) => `<td>${p.like_count} people</td>`)}
+          ${row('', (p) => `<td><a class="btn btn-primary w-100" href="${ROB.link('property', '&id=' + p.property_id)}">View listing</a></td>`)}
+        </tbody></table></div>`
+      out.querySelectorAll('tbody tr').forEach((tr) => free && tr.insertAdjacentHTML('beforeend', '<td></td>'))
+      if (!sameType) out.insertAdjacentHTML('afterbegin', '<div class="alert alert-info d-flex gap-2 small"><i class="bi bi-info-circle" aria-hidden="true"></i>You are comparing rent and sale listings, so prices are not ranked. Compare listings of one type to see the best price.</div>')
+    }
+  </script>
+</body>
+</html>

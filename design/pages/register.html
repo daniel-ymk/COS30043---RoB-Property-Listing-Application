@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="register" data-title="Register" data-roles="guest" data-states="errors">
+  <div id="nav"></div>
+
+  <main class="auth-wrap">
+    <div class="d-flex align-items-center justify-content-center p-4 p-md-5">
+      <div class="w-100" style="max-width:460px">
+        <h1 class="h2 mb-1">Create your account</h1>
+        <p class="text-muted mb-4">Free for renters, buyers and owners.</p>
+
+        <div id="summary"></div>
+
+        <form id="form" novalidate>
+          <fieldset class="mb-4">
+            <legend class="form-label fs-6">I want to</legend>
+            <div class="row g-2">
+              <div class="col-6"><input type="radio" class="btn-check" name="role" id="r-viewer" value="viewer" checked>
+                <label class="btn btn-outline-secondary w-100 h-100 flex-column align-items-start text-start p-3" for="r-viewer"><i class="bi bi-search fs-4 text-primary" aria-hidden="true"></i><span>Find a home</span><small class="fw-normal text-muted">Rent or buy</small></label></div>
+              <div class="col-6"><input type="radio" class="btn-check" name="role" id="r-owner" value="owner">
+                <label class="btn btn-outline-secondary w-100 h-100 flex-column align-items-start text-start p-3" for="r-owner"><i class="bi bi-key fs-4 text-primary" aria-hidden="true"></i><span>List my property</span><small class="fw-normal text-muted">I'm an owner</small></label></div>
+            </div>
+          </fieldset>
+
+          <div class="mb-3"><label class="form-label" for="name">Full name</label>
+            <input class="form-control" id="name" autocomplete="name" aria-describedby="name-err"><div class="invalid-feedback" id="name-err">Enter your full name (2–100 characters)</div></div>
+          <div class="mb-3"><label class="form-label" for="email">Email</label>
+            <input class="form-control" id="email" type="email" autocomplete="email" aria-describedby="email-err"><div class="invalid-feedback" id="email-err">Email is already registered</div></div>
+          <div class="mb-3" id="phone-field" hidden><label class="form-label" for="phone">WhatsApp number</label>
+            <div class="input-group has-validation"><span class="input-group-text">+</span>
+              <input class="form-control" id="phone" inputmode="numeric" autocomplete="tel" placeholder="60123456789" aria-describedby="phone-help phone-err">
+              <div class="invalid-feedback" id="phone-err">Use digits only, starting with the country code (8–15 digits)</div></div>
+            <div class="form-text" id="phone-help">Renters contact you on this number. Include the country code, e.g. 60 for Malaysia.</div></div>
+          <div class="mb-4"><label class="form-label" for="pw">Password</label>
+            <input class="form-control" id="pw" type="password" autocomplete="new-password" aria-describedby="pw-help pw-err">
+            <div class="form-text" id="pw-help">At least 8 characters, with a letter and a number.</div>
+            <div class="invalid-feedback" id="pw-err">Use at least 8 characters with a letter and a number</div></div>
+          <button class="btn btn-primary btn-lg w-100" type="submit">Create account</button>
+        </form>
+        <p class="text-center mt-4 mb-0">Already have an account? <a href="login.html" class="fw-semibold">Log in</a></p>
+
+        <details class="dev-notes">
+          <summary>Dev notes · Register (/register) · Zin</summary>
+          <ul class="mb-0 mt-2 ps-3">
+            <li><code>POST auth.php?action=register {full_name, email, password, role, phone}</code>. Rules and messages: docs/api.md §4.</li>
+            <li>Phone field only when role = owner (required then). Choosing "List my property" reveals it.</li>
+            <li>On <code>422</code>, put each <code>fields[name]</code> under its input and show the summary box at the top with links to the fields; focus the summary (State "errors").</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+    <div class="side"><img src="../img/p22.jpg" alt=""></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const phoneField = document.getElementById('phone-field')
+    document.querySelectorAll('[name=role]').forEach((r) => r.addEventListener('change', () => (phoneField.hidden = !document.getElementById('r-owner').checked)))
+    if (ROB.state === 'errors') {
+      document.getElementById('r-owner').checked = true
+      phoneField.hidden = false
+      document.getElementById('name').value = 'Aisha Rahman'
+      document.getElementById('email').value = 'aisha@example.com'
+      document.getElementById('phone').value = '0123456'
+      ;['email', 'phone', 'pw'].forEach((id) => document.getElementById(id).classList.add('is-invalid'))
+      const s = document.getElementById('summary')
+      s.innerHTML = `<div class="error-summary mb-4" role="alert" tabindex="-1" aria-labelledby="err-title"><h2 id="err-title">Please fix 3 things</h2>
+        <ul class="mb-0 ps-3"><li><a href="#email">Email is already registered</a></li><li><a href="#phone">Use digits only, starting with the country code</a></li><li><a href="#pw">Use at least 8 characters with a letter and a number</a></li></ul></div>`
+      s.firstChild.focus()
+    }
+    document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); location.href = 'home.html?as=viewer' })
+  </script>
+</body>
+</html>

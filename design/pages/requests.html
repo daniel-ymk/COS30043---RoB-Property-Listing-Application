@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Viewing requests · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="requests" data-title="Viewing requests" data-roles="owner" data-states="loading,empty,error">
+  <div id="nav"></div>
+  <main class="container">
+    <div class="page-head"><h1 class="h2 mb-1">Viewing requests</h1><p class="text-muted mb-0">Confirm or decline requests on your listings. Declining frees the day for someone else.</p></div>
+
+    <ul class="nav nav-pills mb-4 gap-2" id="tabs"></ul>
+    <div id="list" class="d-grid gap-3"></div>
+
+    <details class="dev-notes">
+      <summary>Dev notes · Viewing requests (/owner/requests) · Khant</summary>
+      <ul class="mb-0 mt-2">
+        <li><code>GET appointments.php?as=owner&amp;status=pending</code> (tab = status). Navbar badge = <code>meta.total</code> of pending.</li>
+        <li>Confirm / decline: <code>PATCH appointments.php?id= {action}</code>. Move the card out of the Pending tab with a toast. Wrong status → <code>409</code>: reload the list.</li>
+        <li>Oldest viewing date first, so the soonest viewings are at the top.</li>
+      </ul>
+    </details>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const mine = APPOINTMENTS.filter((a) => ROB.byId(a.property_id).owner === 1).sort((a, b) => a.viewing_date.localeCompare(b.viewing_date))
+    const tabs = [['pending', 'Pending'], ['confirmed', 'Confirmed'], ['declined', 'Declined'], ['cancelled', 'Cancelled']]
+    let tab = 'pending'
+    const list = document.getElementById('list')
+    function render() {
+      document.getElementById('tabs').innerHTML = tabs.map(([k, l]) => { const n = mine.filter((a) => a.status === k).length
+        return `<li class="nav-item"><button class="nav-link ${k === tab ? 'active' : ''}" type="button" data-tab="${k}" ${k === tab ? 'aria-current="true"' : ''}>${l} <span class="badge rounded-pill ${k === tab ? 'text-bg-light' : 'text-bg-secondary'} ms-1">${ROB.state === 'empty' ? 0 : n}</span></button></li>` }).join('')
+      if (ROB.state === 'loading') return (list.innerHTML = Array(3).fill('<div class="skeleton" style="height:132px"></div>').join(''))
+      if (ROB.state === 'error') return (list.innerHTML = ROB.errorBox('viewing requests'))
+      const items = ROB.state === 'empty' ? [] : mine.filter((a) => a.status === tab)
+      if (!items.length) return (list.innerHTML = ROB.empty({ icon: 'inbox', title: tab === 'pending' ? "You're all caught up" : `No ${tab} requests`, text: 'New viewing requests show up here and in the navbar badge.', action: `<a class="btn btn-outline-primary" href="availability.html?as=owner">Add more viewing days</a>` }))
+      list.innerHTML = items.map((a) => { const p = ROB.byId(a.property_id)
+        return `<article class="panel p-3 p-md-4" aria-label="Request from ${a.viewer}"><div class="row g-3 align-items-center">
+          <div class="col-md-5 d-flex gap-3 align-items-center"><img class="list-thumb" style="width:96px;height:72px" src="${p.cover_image}" alt=""><div class="min-w-0"><a class="fw-semibold text-body text-decoration-none" href="property.html?as=owner&id=${p.property_id}">${p.title}</a><div class="small text-muted">${p.city}</div></div></div>
+          <div class="col-md-4"><div class="d-flex align-items-center gap-2 mb-1"><span class="avatar" style="width:28px;height:28px;font-size:0.75rem">${ROB.initials(a.viewer)}</span><span class="fw-semibold">${a.viewer}</span></div>
+            <div class="small"><i class="bi bi-calendar-event text-muted" aria-hidden="true"></i> ${ROB.fmtDate(a.viewing_date)} · ${ROB.fmtTime(a.viewing_time)}</div>
+            ${a.message ? `<div class="small text-muted mt-1">"${a.message}"</div>` : ''}</div>
+          <div class="col-md-3 d-flex gap-2 justify-content-md-end">${a.status === 'pending'
+            ? `<button class="btn btn-outline-secondary" type="button" data-act="Declined">Decline</button><button class="btn btn-primary" type="button" data-act="Confirmed"><i class="bi bi-check-lg" aria-hidden="true"></i>Confirm</button>`
+            : `${ROB.statusBadge(a.status)}`}</div>
+          </div><div class="small text-muted mt-2">Requested ${a.created_at}</div></article>` }).join('')
+    }
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-tab]'); if (t) { tab = t.dataset.tab; render() }
+      const b = e.target.closest('[data-act]'); if (b) { b.closest('article').remove(); ROB.toast(`Viewing ${b.dataset.act.toLowerCase()}. The renter has been told.`) }
+    })
+    render()
+  </script>
+</body>
+</html>

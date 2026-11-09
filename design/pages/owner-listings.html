@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My listings · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="owner-listings" data-title="My listings" data-roles="owner" data-states="loading,empty,error">
+  <div id="nav"></div>
+  <main class="container">
+    <div class="page-head d-flex flex-wrap justify-content-between align-items-end gap-3">
+      <div><h1 class="h2 mb-1">My listings</h1><p class="text-muted mb-0">Edit, mark as rented or sold, or remove your properties.</p></div>
+      <a class="btn btn-primary" href="listing-form.html?as=owner"><i class="bi bi-plus-lg" aria-hidden="true"></i>New listing</a>
+    </div>
+
+    <div class="row g-3 mb-4" id="stats"></div>
+    <div id="out"></div>
+
+    <div class="modal fade" id="del" tabindex="-1" aria-labelledby="del-title" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body p-4">
+      <h2 class="h5" id="del-title">Delete "<span id="del-name"></span>"?</h2><p class="text-muted">Its photos, likes and viewing requests are deleted too. This can't be undone.</p>
+      <div class="d-flex gap-2 justify-content-end"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep listing</button><button class="btn btn-danger" data-bs-dismiss="modal" onclick="ROB.toast('Listing deleted', 'trash3')">Delete listing</button></div>
+    </div></div></div></div>
+
+    <details class="dev-notes">
+      <summary>Dev notes · My listings (/owner/listings) · Khant</summary>
+      <ul class="mb-0 mt-2">
+        <li><code>GET properties.php?mine=1</code> (all statuses). Status menu: <code>PUT properties.php?id=</code> with the full object and the new <code>status</code>. Rented/sold cancels open viewings, so warn in the menu.</li>
+        <li>Delete: confirm modal → <code>DELETE properties.php?id=</code> → <code>204</code> → remove the row and toast.</li>
+        <li>Table on desktop; under 768px each row becomes a card (same data).</li>
+      </ul>
+    </details>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const mine = LISTINGS.filter((p) => p.owner === 1)
+    const pend = APPOINTMENTS.filter((a) => a.status === 'pending' && mine.some((p) => p.property_id === a.property_id)).length
+    const stat = (n, k, icon) => `<div class="col-6 col-lg-3"><div class="stat d-flex justify-content-between"><div><div class="n">${n}</div><div class="k">${k}</div></div><i class="bi bi-${icon} fs-3 text-primary" aria-hidden="true"></i></div></div>`
+    const out = document.getElementById('out')
+    if (ROB.state !== 'empty') document.getElementById('stats').innerHTML = stat(mine.filter((p) => p.status === 'available').length, 'Available', 'house-check') + stat(mine.filter((p) => p.status !== 'available').length, 'Rented or sold', 'key') + stat(mine.reduce((s, p) => s + p.like_count, 0), 'Total likes', 'heart') + stat(pend, 'Pending requests', 'inbox')
+
+    if (ROB.state === 'loading') out.innerHTML = '<div class="d-grid gap-2" aria-hidden="true">' + Array(5).fill('<div class="skeleton" style="height:76px"></div>').join('') + '</div>'
+    else if (ROB.state === 'error') out.innerHTML = ROB.errorBox('your listings')
+    else if (ROB.state === 'empty') out.innerHTML = ROB.empty({ icon: 'buildings', title: "You haven't listed a property yet", text: 'Add photos, a price and the days you can show it. It takes about 5 minutes.', action: '<a class="btn btn-primary" href="listing-form.html?as=owner">Create your first listing</a>' })
+    else {
+      const menu = (p) => `<div class="dropdown"><button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">${ROB.statusBadge(p.status)}</button>
+        <ul class="dropdown-menu shadow-sm"><li><h6 class="dropdown-header">Change status</h6></li>
+        ${['available', 'rented', 'sold'].map((s) => `<li><button class="dropdown-item ${s === p.status ? 'active' : ''}" type="button">${s[0].toUpperCase() + s.slice(1)}</button></li>`).join('')}
+        <li><hr class="dropdown-divider"></li><li><span class="dropdown-item-text small text-muted" style="max-width:220px;display:block">Rented or sold cancels open viewings.</span></li></ul></div>`
+      const acts = (p) => `<a class="btn btn-outline-secondary btn-sm" href="listing-form.html?as=owner&id=${p.property_id}" aria-label="Edit ${p.title}"><i class="bi bi-pencil" aria-hidden="true"></i><span class="d-none d-xl-inline">Edit</span></a>
+        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#del" data-name="${p.title}" aria-label="Delete ${p.title}"><i class="bi bi-trash3" aria-hidden="true"></i></button>`
+      out.innerHTML = `<div class="d-none d-md-block"><table class="table table-rob"><thead><tr><th scope="col">Listing</th><th scope="col">Price</th><th scope="col">Status</th><th scope="col">Likes</th><th scope="col">Requests</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead><tbody>
+        ${mine.map((p) => { const r = APPOINTMENTS.filter((a) => a.property_id === p.property_id && a.status === 'pending').length; return `<tr>
+          <td><div class="d-flex align-items-center gap-3"><img class="list-thumb" src="${p.cover_image}" alt=""><div><a class="fw-semibold text-body text-decoration-none" href="property.html?as=owner&id=${p.property_id}">${p.title}</a><div class="small text-muted">${p.city} · ${ROB.typeLabel[p.property_type]} · For ${p.listing_type}</div></div></div></td>
+          <td class="price text-nowrap">${ROB.priceHTML(p)}</td><td>${menu(p)}</td><td>${p.like_count}</td>
+          <td>${r ? `<a href="requests.html?as=owner" class="badge rounded-pill text-bg-primary text-decoration-none">${r} pending</a>` : '<span class="text-muted">–</span>'}</td>
+          <td class="text-end text-nowrap"><div class="d-inline-flex gap-2">${acts(p)}</div></td></tr>` }).join('')}</tbody></table></div>
+        <div class="d-md-none d-grid gap-3">${mine.map((p) => `<div class="panel p-3"><div class="d-flex gap-3"><img class="list-thumb" src="${p.cover_image}" alt=""><div class="min-w-0"><div class="fw-semibold">${p.title}</div><div class="price">${ROB.priceHTML(p)}</div></div></div>
+          <div class="d-flex justify-content-between align-items-center mt-3">${menu(p)}<div class="d-flex gap-2">${acts(p)}</div></div></div>`).join('')}</div>`
+      document.getElementById('del').addEventListener('show.bs.modal', (e) => (document.getElementById('del-name').textContent = e.relatedTarget.dataset.name))
+    }
+  </script>
+</body>
+</html>

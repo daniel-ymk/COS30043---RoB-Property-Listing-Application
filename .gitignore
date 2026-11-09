@@ -1,0 +1,18 @@
+# Secrets: never commit real DB credentials
+backend/config/db.php
+backend/config/db.local.php
+.env
+
+# Photos owners upload (uploads/<property_id>/); the seed photos are tracked
+backend/uploads/*
+!backend/uploads/.htaccess
+!backend/uploads/seed/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Doc
+docs/advanced-feature-media-manager.md

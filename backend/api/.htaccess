@@ -1,0 +1,13 @@
+# Send every API request to the router: /api/properties/5 -> index.php
+# If mod_rewrite is off, the same routes work as /api/index.php/properties/5.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Helper files are not endpoints.
+<FilesMatch "^_">
+    Require all denied
+</FilesMatch>
+Options -Indexes

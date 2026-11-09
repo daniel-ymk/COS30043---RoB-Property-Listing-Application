@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Liked · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="liked" data-title="Liked properties" data-roles="viewer,owner" data-states="loading,empty,error">
+  <div id="nav"></div>
+  <main class="container">
+    <div class="page-head d-flex flex-wrap justify-content-between align-items-end gap-3">
+      <div><h1 class="h2 mb-1">Liked properties</h1><p class="text-muted mb-0" id="count"></p></div>
+      <a class="btn btn-outline-secondary" href="compare.html"><i class="bi bi-layout-three-columns" aria-hidden="true"></i>Compare liked homes</a>
+    </div>
+    <div id="results"></div>
+    <details class="dev-notes">
+      <summary>Dev notes · Liked (/liked) · Khant</summary>
+      <ul class="mb-0 mt-2">
+        <li><code>GET likes.php</code> (paged, same card shape). Un-liking here (<code>DELETE likes.php?property_id=</code>) removes the card with a toast offering "Undo".</li>
+        <li>A liked listing that is now rented still shows, greyed with a "RENTED" strip, so people know what happened.</li>
+      </ul>
+    </details>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const items = [...LIKED_IDS, 7].map(ROB.byId)
+    document.getElementById('count').textContent = ROB.state === 'empty' ? 'Nothing saved yet' : `${items.length} homes saved`
+    ROB.grid(document.getElementById('results'), items, {
+      cols: 'row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4', what: 'liked homes',
+      emptyOpts: { icon: 'heart', title: 'No liked homes yet', text: 'Tap the heart on any listing to keep it here for later.', action: `<a class="btn btn-primary" href="${ROB.link('listings')}">Browse properties</a>` },
+    })
+    // Every card on this page is liked
+    document.querySelectorAll('[data-like]').forEach((b) => b.setAttribute('aria-pressed', 'true'))
+  </script>
+</body>
+</html>

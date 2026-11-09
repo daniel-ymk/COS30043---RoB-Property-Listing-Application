@@ -1,0 +1,448 @@
+/* RoB Property global styles, ported from design/css/rob.css.
+   Mobile-first: base rules are the phone layout, min-width queries add
+   tablet (768px) and desktop (992px / 1200px). Styles used by one component
+   live in that component's <style scoped>. */
+
+/* ---------- 1. Tokens ---------- */
+:root {
+  /* brand */
+  --rob-primary: #0f766e;
+  --rob-primary-hover: #115e59;
+  --rob-primary-subtle: #ccfbf1;
+  --rob-sale: #0369a1;
+  --rob-rent: #b45309;
+  --rob-rent-subtle: #fef3c7;
+  --rob-sale-subtle: #e0f2fe;
+
+  /* neutrals */
+  --rob-ink: #0f172a;
+  --rob-muted: #475569;
+  --rob-surface: #f8fafc;
+  --rob-line: #e2e8f0;
+  --rob-input-line: #64748b;
+
+  /* feedback */
+  --rob-success: #15803d;
+  --rob-danger: #dc2626;
+  --rob-warning: #b45309;
+
+  /* shape */
+  --rob-radius: 0.5rem;
+  --rob-radius-lg: 0.75rem;
+  --rob-shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+  --rob-shadow-hover: 0 8px 24px rgb(15 23 42 / 0.12);
+  --rob-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --rob-nav-height: 68px;
+
+  --rob-font-heading: 'Lexend', system-ui, sans-serif;
+  --rob-font-body: 'Source Sans 3', system-ui, sans-serif;
+
+  /* Bootstrap mapping */
+  --bs-primary: var(--rob-primary);
+  --bs-primary-rgb: 15, 118, 110;
+  --bs-primary-text-emphasis: var(--rob-primary-hover);
+  --bs-primary-bg-subtle: var(--rob-primary-subtle);
+  --bs-success: var(--rob-success);
+  --bs-success-rgb: 21, 128, 61;
+  --bs-danger: var(--rob-danger);
+  --bs-danger-rgb: 220, 38, 38;
+  --bs-body-font-family: var(--rob-font-body);
+  --bs-body-font-size: 1rem;
+  --bs-body-line-height: 1.5;
+  --bs-body-color: var(--rob-ink);
+  --bs-body-bg: #fff;
+  --bs-secondary-color: var(--rob-muted);
+  --bs-tertiary-bg: var(--rob-surface);
+  --bs-border-color: var(--rob-line);
+  --bs-border-radius: var(--rob-radius);
+  --bs-border-radius-lg: var(--rob-radius-lg);
+  --bs-link-color: var(--rob-primary);
+  --bs-link-color-rgb: 15, 118, 110;
+  --bs-link-hover-color: var(--rob-primary-hover);
+  --bs-link-hover-color-rgb: 17, 94, 89;
+  --bs-focus-ring-color: rgb(15 118 110 / 0.35);
+  --bs-form-invalid-color: var(--rob-danger);
+  --bs-form-invalid-border-color: var(--rob-danger);
+}
+
+/* sticky footer: the page fills the screen even when content is short */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+#app > main {
+  flex: 1;
+}
+
+/* ---------- 2. Type ---------- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
+.display-5,
+.navbar-brand {
+  font-family: var(--rob-font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--rob-ink);
+}
+.display-5 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.text-muted,
+.text-body-secondary {
+  color: var(--rob-muted) !important;
+}
+.price {
+  font-family: var(--rob-font-heading);
+  font-weight: 600;
+  color: var(--rob-ink);
+}
+.price small {
+  font-family: var(--rob-font-body);
+  font-weight: 400;
+  color: var(--rob-muted);
+  font-size: 0.875rem;
+}
+
+/* ---------- 3. Buttons ---------- */
+.btn {
+  font-weight: 600;
+  border-radius: var(--rob-radius);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition:
+    background-color 0.15s var(--rob-ease),
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.1s;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-sm {
+  min-height: 36px;
+}
+.btn-primary {
+  --bs-btn-bg: var(--rob-primary);
+  --bs-btn-border-color: var(--rob-primary);
+  --bs-btn-hover-bg: var(--rob-primary-hover);
+  --bs-btn-hover-border-color: var(--rob-primary-hover);
+  --bs-btn-active-bg: #134e4a;
+  --bs-btn-active-border-color: #134e4a;
+  --bs-btn-disabled-bg: var(--rob-primary);
+  --bs-btn-disabled-border-color: var(--rob-primary);
+  --bs-btn-focus-shadow-rgb: 15, 118, 110;
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--rob-primary);
+  --bs-btn-border-color: var(--rob-primary);
+  --bs-btn-hover-bg: var(--rob-primary);
+  --bs-btn-hover-border-color: var(--rob-primary);
+  --bs-btn-active-bg: var(--rob-primary-hover);
+  --bs-btn-active-border-color: var(--rob-primary-hover);
+  --bs-btn-focus-shadow-rgb: 15, 118, 110;
+}
+.btn-outline-secondary {
+  --bs-btn-color: var(--rob-ink);
+  --bs-btn-border-color: var(--rob-line);
+  --bs-btn-hover-bg: var(--rob-surface);
+  --bs-btn-hover-color: var(--rob-ink);
+  --bs-btn-hover-border-color: #cbd5e1;
+  --bs-btn-active-bg: var(--rob-line);
+  --bs-btn-active-color: var(--rob-ink);
+  --bs-btn-active-border-color: #cbd5e1;
+}
+.btn-outline-danger {
+  --bs-btn-color: #b91c1c;
+  --bs-btn-border-color: #b91c1c;
+  --bs-btn-hover-bg: #b91c1c;
+  --bs-btn-hover-border-color: #b91c1c;
+  --bs-btn-active-bg: #991b1b;
+  --bs-btn-active-border-color: #991b1b;
+}
+.btn-whatsapp {
+  --bs-btn-bg: #15803d;
+  --bs-btn-border-color: #15803d;
+  --bs-btn-color: #fff;
+  --bs-btn-hover-bg: #166534;
+  --bs-btn-hover-border-color: #166534;
+  --bs-btn-hover-color: #fff;
+}
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* ---------- 4. Forms ---------- */
+.form-label {
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+.form-control,
+.form-select {
+  border-color: var(--rob-input-line);
+  min-height: 44px;
+  border-radius: var(--rob-radius);
+}
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--rob-primary);
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+.form-check-input {
+  border-color: var(--rob-input-line);
+}
+.form-check-input:checked {
+  background-color: var(--rob-primary);
+  border-color: var(--rob-primary);
+}
+.form-text {
+  color: var(--rob-muted);
+}
+.invalid-feedback {
+  font-weight: 500;
+}
+.invalid-feedback::before {
+  content: '\F33A'; /* bi-exclamation-circle */
+  font-family: bootstrap-icons;
+  margin-right: 0.25rem;
+  vertical-align: -0.1em;
+}
+
+/* option cards (register role) */
+.btn-check:checked + .btn-outline-secondary.flex-column {
+  background: var(--rob-primary-subtle);
+  border-color: var(--rob-primary);
+  color: var(--rob-ink);
+  box-shadow: inset 0 0 0 1px var(--rob-primary);
+}
+
+/* segmented choice (rent / buy) */
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--rob-surface);
+  border: 1px solid var(--rob-line);
+  border-radius: calc(var(--rob-radius) + 4px);
+  gap: 4px;
+}
+.segmented .btn-check + .btn {
+  border: 0;
+  min-height: 40px;
+  padding: 0 1.25rem;
+  color: var(--rob-muted);
+  background: transparent;
+}
+.segmented .btn-check:checked + .btn {
+  background: #fff;
+  color: var(--rob-ink);
+  box-shadow: var(--rob-shadow);
+}
+.segmented.w-100 .btn {
+  flex: 1;
+}
+
+/* ---------- 5. Badges ---------- */
+.badge-listing {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  color: #fff;
+}
+.badge-sale {
+  background: var(--rob-sale);
+}
+.badge-rent {
+  background: var(--rob-rent);
+}
+.count-pill {
+  background: var(--rob-primary);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.45rem;
+  margin-left: 0.25rem;
+}
+
+/* initials avatar (navbar, profile) */
+.avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--rob-primary-subtle);
+  color: var(--rob-primary-hover);
+  display: inline-grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+.avatar-lg {
+  width: 64px;
+  height: 64px;
+  font-size: 1.25rem;
+}
+
+/* filter chips */
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 32px;
+  padding: 0 0.5rem 0 0.75rem;
+  border-radius: 999px;
+  background: var(--rob-primary-subtle);
+  color: var(--rob-primary-hover);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 0;
+}
+.chip .bi {
+  font-size: 1rem;
+}
+
+/* property specs row (card, detail, map list) */
+.specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  color: var(--rob-muted);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.specs i {
+  color: var(--rob-ink);
+  margin-right: 0.3rem;
+}
+
+/* ---------- 6. Sections and panels ---------- */
+.section {
+  padding-block: 2.5rem;
+}
+.section-tight {
+  padding-block: 2rem;
+}
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+}
+.page-head {
+  padding-block: 1.5rem 1rem;
+}
+.panel,
+.panel-surface {
+  border: 1px solid var(--rob-line);
+  border-radius: var(--rob-radius-lg);
+  padding: 1rem;
+}
+.panel {
+  background: #fff;
+}
+.panel-surface {
+  background: var(--rob-surface);
+}
+@media (min-width: 768px) {
+  .section {
+    padding-block: 4rem;
+  }
+  .section-tight {
+    padding-block: 2.5rem;
+  }
+  .page-head {
+    padding-block: 2rem 1.5rem;
+  }
+  .panel,
+  .panel-surface {
+    padding: 1.5rem;
+  }
+}
+
+/* tabs */
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--rob-primary);
+  --bs-nav-link-color: var(--rob-muted);
+  --bs-nav-link-hover-color: var(--rob-ink);
+}
+.nav-pills .nav-link {
+  font-weight: 600;
+  min-height: 40px;
+  border: 1px solid var(--rob-line);
+}
+.nav-pills .nav-link.active {
+  border-color: var(--rob-primary);
+}
+
+/* pagination */
+.pagination {
+  --bs-pagination-color: var(--rob-ink);
+  --bs-pagination-hover-color: var(--rob-ink);
+  --bs-pagination-active-bg: var(--rob-primary);
+  --bs-pagination-active-border-color: var(--rob-primary);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+.pagination .page-link {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+}
+
+/* Scrolling tables (compare, my listings): screen-reader-only text in a
+   cell is position: absolute, so without this it is placed against the page
+   instead of the scroll box and makes the whole page scroll sideways */
+.table-responsive {
+  position: relative;
+}
+
+/* loading placeholder */
+.skeleton {
+  background: linear-gradient(90deg, #eef2f6 25%, #f8fafc 50%, #eef2f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 6px;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+  .btn {
+    transition: none;
+  }
+}

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New listing · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="listing-form" data-title="New listing" data-roles="owner" data-states="errors">
+  <div id="nav"></div>
+  <main class="container">
+    <div class="page-head">
+      <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-2"><li class="breadcrumb-item"><a href="owner-listings.html?as=owner">My listings</a></li><li class="breadcrumb-item active" aria-current="page" id="crumb">New listing</li></ol></nav>
+      <h1 class="h2 mb-1" id="h">List a property</h1><p class="text-muted mb-0">Fields marked * are required.</p>
+    </div>
+    <div id="summary"></div>
+
+    <form class="row g-4" id="form" novalidate>
+      <div class="col-lg-8 d-grid gap-4">
+        <section class="panel" aria-labelledby="s1"><h2 class="h5 mb-3" id="s1">1. Basics</h2>
+          <div class="mb-3"><label class="form-label" for="title">Listing title *</label><input class="form-control" id="title" maxlength="150" placeholder="e.g. Fully furnished 2-bed condo in Mont Kiara" aria-describedby="title-err">
+            <div class="invalid-feedback" id="title-err">Title must be 5–150 characters</div></div>
+          <div class="row g-3">
+            <div class="col-md-4"><span class="form-label d-block">Listing type *</span>
+              <div class="segmented w-100" role="radiogroup" aria-label="Listing type"><input type="radio" class="btn-check" name="lt" id="lt-r" checked><label class="btn" for="lt-r">Rent</label><input type="radio" class="btn-check" name="lt" id="lt-s"><label class="btn" for="lt-s">Sale</label></div></div>
+            <div class="col-md-4"><label class="form-label" for="ptype">Property type *</label><select class="form-select" id="ptype"><option>Condo</option><option>Apartment</option><option>House</option><option>Townhouse</option><option>Studio</option><option>Room</option></select></div>
+            <div class="col-md-4"><label class="form-label" for="price">Price *</label><div class="input-group has-validation"><span class="input-group-text">RM</span><input class="form-control" id="price" inputmode="decimal" aria-describedby="price-help price-err"><span class="input-group-text" id="per">/month</span>
+              <div class="invalid-feedback" id="price-err">Enter a price above 0</div></div><div class="form-text" id="price-help">Monthly rent, or the full sale price.</div></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="s2"><h2 class="h5 mb-3" id="s2">2. Size and rooms</h2>
+          <div class="row g-3">
+            <div class="col-6 col-md-3"><label class="form-label" for="bed">Bedrooms</label><input class="form-control" id="bed" type="number" min="0" max="20" value="2"></div>
+            <div class="col-6 col-md-3"><label class="form-label" for="bath">Bathrooms</label><input class="form-control" id="bath" type="number" min="0" max="20" value="2"></div>
+            <div class="col-6 col-md-3"><label class="form-label" for="park">Parking</label><input class="form-control" id="park" type="number" min="0" max="20" value="1"></div>
+            <div class="col-6 col-md-3"><label class="form-label" for="area">Floor area</label><div class="input-group"><input class="form-control" id="area" inputmode="decimal"><span class="input-group-text">m²</span></div></div>
+          </div>
+          <div class="form-check form-switch mt-3"><input class="form-check-input" type="checkbox" role="switch" id="furn"><label class="form-check-label" for="furn">Furnished</label></div>
+        </section>
+
+        <section class="panel" aria-labelledby="s3"><h2 class="h5 mb-3" id="s3">3. Description *</h2>
+          <label class="visually-hidden" for="desc">Description</label>
+          <textarea class="form-control" id="desc" rows="5" maxlength="5000" placeholder="What makes this home good? Mention transport, schools, shops and facilities." aria-describedby="desc-help desc-err"></textarea>
+          <div class="d-flex justify-content-between"><div class="form-text" id="desc-help">At least 20 characters.</div><div class="form-text"><span id="dc">0</span> / 5000</div></div>
+          <div class="invalid-feedback" id="desc-err">Description must be at least 20 characters</div>
+        </section>
+
+        <section class="panel" aria-labelledby="s4"><h2 class="h5 mb-3" id="s4">4. Location</h2>
+          <div class="row g-3">
+            <div class="col-12"><label class="form-label" for="addr">Street address *</label><input class="form-control" id="addr" autocomplete="street-address" aria-describedby="addr-err"><div class="invalid-feedback" id="addr-err">Enter the street address</div></div>
+            <div class="col-md-5"><label class="form-label" for="city">City *</label><input class="form-control" id="city" list="cities"><datalist id="cities"><option>Kuala Lumpur</option><option>Kuching</option><option>George Town</option><option>Kota Samarahan</option></datalist></div>
+            <div class="col-md-4"><label class="form-label" for="state">State</label><select class="form-select" id="state"><option>Wilayah Persekutuan</option><option>Sarawak</option><option>Penang</option><option>Selangor</option><option>Johor</option></select></div>
+            <div class="col-md-3"><label class="form-label" for="pc">Postcode</label><input class="form-control" id="pc" inputmode="numeric" maxlength="10"></div>
+          </div>
+          <p class="form-label mt-3 mb-1">Pin on the map <span class="text-muted fw-normal">(optional)</span></p>
+          <p class="form-text mt-0">Click the map to place the pin. Renters use it for map search.</p>
+          <div id="map" class="rounded-3 border" style="height:260px" role="region" aria-label="Pick the location on the map"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="s5"><div class="d-flex justify-content-between align-items-baseline"><h2 class="h5 mb-3" id="s5">5. Photos</h2><span class="text-muted small" id="pcount"></span></div>
+          <label class="dropzone d-block mb-3" for="files">
+            <i class="bi bi-cloud-arrow-up fs-1 text-primary" aria-hidden="true"></i>
+            <div class="fw-semibold mt-1">Drag photos here or <span class="text-primary text-decoration-underline">browse</span></div>
+            <div class="small text-muted">JPEG, PNG or WebP · up to 2 MB each · max 10 photos</div>
+            <input type="file" id="files" class="visually-hidden" multiple accept="image/jpeg,image/png,image/webp">
+          </label>
+          <div class="thumbs" id="thumbs"></div>
+          <p class="form-text mb-0 mt-2"><i class="bi bi-arrows-move" aria-hidden="true"></i> Drag to reorder. The first photo is the cover on every card.</p>
+        </section>
+      </div>
+
+      <aside class="col-lg-4"><div class="sticky-side d-grid gap-3">
+        <div><p class="form-label mb-2">Card preview</p><div id="preview"></div></div>
+        <div class="panel d-grid gap-2"><button class="btn btn-primary btn-lg" type="submit" id="save">Publish listing</button><a class="btn btn-outline-secondary" href="owner-listings.html?as=owner">Cancel</a>
+          <p class="small text-muted mb-0 text-center">You can edit or remove it any time.</p></div>
+      </div></aside>
+    </form>
+
+    <details class="dev-notes">
+      <summary>Dev notes · Create / edit listing (/owner/listings/new, /:id/edit) · Khant</summary>
+      <ul class="mb-0 mt-2">
+        <li>Create: <code>POST properties.php</code> → then <code>POST images.php?property_id=</code> with <code>photos[]</code>. Edit: <code>PUT properties.php?id=</code> (full object), reorder <code>PUT images.php {order:[ids]}</code>, remove <code>DELETE images.php?id=</code>.</li>
+        <li>Upload progress from <code>XMLHttpRequest.upload.onprogress</code> → the bar on each new thumb. Reject wrong type / &gt;2 MB before uploading.</li>
+        <li>Rent/sale switches the price suffix. The preview card updates live from the form (it's the same <code>PropertyCard</code>).</li>
+        <li>Map click sets <code>latitude</code>/<code>longitude</code> (both or neither). Edit mode: <code>listing-form.html?id=1</code>.</li>
+      </ul>
+    </details>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const id = Number(new URLSearchParams(location.search).get('id'))
+    const edit = id && ROB.byId(id)
+    const $ = (s) => document.getElementById(s)
+    let photos = edit ? edit.images.map(ROB.IMG) : [ROB.IMG(9), ROB.IMG(17)]
+
+    if (edit) {
+      document.title = 'Edit listing · RoB Property'
+      $('h').textContent = 'Edit listing'; $('crumb').textContent = edit.title; $('save').textContent = 'Save changes'
+      Object.entries({ title: edit.title, price: edit.price, bed: edit.bedrooms, bath: edit.bathrooms, park: edit.parking_spaces, area: edit.floor_area_sqm, desc: edit.description, addr: edit.address, city: edit.city, pc: edit.postcode }).forEach(([k, v]) => ($(k).value = v))
+      $('furn').checked = edit.is_furnished; $('lt-s').checked = edit.listing_type === 'sale'
+    }
+
+    function thumbs() {
+      $('pcount').textContent = `${photos.length} / 10`
+      $('thumbs').innerHTML = photos.map((src, i) => `<div class="thumb"><img src="${src}" alt="Photo ${i + 1}">${i === 0 ? '<span class="cover-tag">COVER</span>' : ''}
+        <div class="tools"><button class="btn" type="button" aria-label="Remove photo ${i + 1}" data-rm="${i}"><i class="bi bi-trash3" aria-hidden="true"></i></button></div>
+        <span class="grip" aria-hidden="true"><i class="bi bi-grip-horizontal"></i></span></div>`).join('') +
+        (!edit ? `<div class="thumb d-flex flex-column justify-content-center p-3 bg-body-tertiary"><div class="small fw-semibold text-truncate mb-2">kitchen.jpg</div><div class="progress" role="progressbar" aria-label="Uploading kitchen.jpg" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" style="height:6px"><div class="progress-bar" style="width:64%"></div></div><div class="small text-muted mt-1">64%</div></div>
+        <div class="thumb d-flex flex-column justify-content-center p-3" style="border-color:var(--rob-danger)"><div class="small fw-semibold text-truncate">floorplan.pdf</div><div class="small text-danger mt-1"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> Only JPEG, PNG or WebP</div></div>` : '')
+    }
+    $('thumbs').addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (b) { photos.splice(Number(b.dataset.rm), 1); thumbs(); preview() } })
+
+    function preview() {
+      const sale = $('lt-s').checked
+      $('per').hidden = sale
+      const p = { property_id: 0, title: $('title').value || 'Your listing title', listing_type: sale ? 'sale' : 'rent', property_type: $('ptype').value.toLowerCase(), price: Number($('price').value) || 0,
+        bedrooms: Number($('bed').value), bathrooms: Number($('bath').value), parking_spaces: Number($('park').value), floor_area_sqm: $('area').value || '–', is_furnished: $('furn').checked,
+        city: $('city').value || 'City', status: 'available', cover_image: photos[0] || '', like_count: 0 }
+      $('preview').innerHTML = ROB.card(p, { liked: false })
+      if (!p.price) $('preview').querySelector('.price').innerHTML = '<span class="text-muted fw-normal">Add a price</span>'
+      $('dc').textContent = $('desc').value.length
+    }
+    $('form').addEventListener('input', preview)
+    $('form').addEventListener('change', preview)
+
+    if (ROB.state === 'errors') {
+      $('title').value = 'Flat'; $('price').value = ''; $('desc').value = 'Nice unit.'
+      ;['title', 'price', 'desc', 'addr'].forEach((i) => $(i).classList.add('is-invalid'))
+      $('summary').innerHTML = `<div class="error-summary mb-4" role="alert" tabindex="-1" aria-labelledby="et"><h2 id="et">Please fix 4 things before publishing</h2><ul class="mb-0 ps-3">
+        <li><a href="#title">Title must be 5–150 characters</a></li><li><a href="#price">Enter a price above 0</a></li><li><a href="#desc">Description must be at least 20 characters</a></li><li><a href="#addr">Enter the street address</a></li></ul></div>`
+    }
+    thumbs(); preview()
+
+    const ll = edit ? [edit.latitude, edit.longitude] : [3.17, 101.65]
+    const map = L.map('map', { scrollWheelZoom: false }).setView(ll, 14)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map)
+    const pin = L.marker(ll, { draggable: true, title: 'Property location' }).addTo(map)
+    map.on('click', (e) => pin.setLatLng(e.latlng))
+    $('form').addEventListener('submit', (e) => { e.preventDefault(); location.href = 'owner-listings.html?as=owner' })
+  </script>
+</body>
+</html>

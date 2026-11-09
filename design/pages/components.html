@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design system · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+  <style>
+    .swatch { border: 1px solid var(--rob-line); border-radius: var(--rob-radius-lg); overflow: hidden; }
+    .swatch .chip-c { height: 72px; }
+    .swatch .meta { padding: 0.625rem 0.75rem; font-size: 0.875rem; }
+    .ds-h { border-top: 1px solid var(--rob-line); padding-top: 2.5rem; margin-top: 2.5rem; }
+  </style>
+</head>
+<body data-page="components" data-title="Design system">
+  <div id="nav"></div>
+  <main class="container py-4">
+    <h1 class="h2 mb-1">RoB Property design system</h1>
+    <p class="text-muted" style="max-width:70ch">Bootstrap 5.3 with our tokens on top. Copy the <code>:root</code> block from <code>design/css/rob.css</code> into <code>frontend/src/assets/main.css</code> and every Bootstrap class picks up these colours, fonts and radii.</p>
+
+    <section class="ds-h" aria-labelledby="c-colour"><h2 class="h4 mb-3" id="c-colour">Colour</h2>
+      <div class="row row-cols-2 row-cols-md-4 row-cols-xl-6 g-3" id="swatches"></div></section>
+
+    <section class="ds-h" aria-labelledby="c-type"><h2 class="h4 mb-3" id="c-type">Type</h2>
+      <div class="row g-4"><div class="col-lg-7 d-grid gap-2">
+        <div class="display-5">Display · Lexend 700 / 48</div><div class="h1 mb-0">Heading 1 · Lexend 600 / 40</div><div class="h2 mb-0">Heading 2 · Lexend 600 / 32</div>
+        <div class="h3 mb-0">Heading 3 · Lexend 600 / 28</div><div class="h4 mb-0">Heading 4 · Lexend 600 / 24</div><div class="h5 mb-0">Heading 5 · Lexend 600 / 20</div>
+        <p class="mb-0">Body · Source Sans 3 400 / 16, line height 1.5. Long text stays under 65 characters a line.</p><p class="small text-muted mb-0">Small · 14, muted #475569 (7.6:1 on white)</p>
+        <div class="price fs-3">RM 3,800<small> /month</small></div></div>
+        <div class="col-lg-5"><div class="panel-surface small"><strong>Rules</strong><ul class="mb-0 mt-2 ps-3"><li>Headings: Lexend. Everything else: Source Sans 3.</li><li>Body never under 16px; small text never under 14px.</li><li>Prices always Lexend 600, with "/month" for rent.</li><li>Sentence case everywhere. Buttons say verb + object: "Book viewing", not "Submit".</li></ul></div></div></div></section>
+
+    <section class="ds-h" aria-labelledby="c-btn"><h2 class="h4 mb-3" id="c-btn">Buttons</h2>
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3"><button class="btn btn-primary">Primary</button><button class="btn btn-outline-primary">Outline</button><button class="btn btn-outline-secondary">Secondary</button><button class="btn btn-link">Link</button><button class="btn btn-whatsapp"><i class="bi bi-whatsapp" aria-hidden="true"></i>WhatsApp</button><button class="btn btn-danger">Delete</button></div>
+      <div class="d-flex flex-wrap gap-2 align-items-center"><button class="btn btn-primary btn-lg">Large</button><button class="btn btn-primary btn-sm">Small</button><button class="btn btn-primary" disabled>Disabled</button><button class="btn btn-primary" disabled><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Saving…</button><button class="like-btn border" aria-pressed="false" aria-label="Save"><i class="bi bi-heart" aria-hidden="true"></i></button><button class="like-btn border" aria-pressed="true" aria-label="Saved"><i class="bi bi-heart" aria-hidden="true"></i></button></div>
+      <p class="small text-muted mt-2 mb-0">Minimum 44px tall (36px for small). One primary button per area.</p></section>
+
+    <section class="ds-h" aria-labelledby="c-form"><h2 class="h4 mb-3" id="c-form">Form fields</h2>
+      <div class="row g-4">
+        <div class="col-md-4"><label class="form-label" for="d1">Default</label><input class="form-control" id="d1" placeholder="Placeholder text" aria-describedby="d1h"><div class="form-text" id="d1h">Helper text sits under the field.</div></div>
+        <div class="col-md-4"><label class="form-label" for="d2">With error</label><input class="form-control is-invalid" id="d2" value="sarah@" aria-describedby="d2e"><div class="invalid-feedback" id="d2e">Enter a valid email address</div></div>
+        <div class="col-md-4"><label class="form-label" for="d3">Disabled</label><input class="form-control" id="d3" value="sarah@example.com" disabled></div>
+        <div class="col-md-4"><label class="form-label" for="d4">Select</label><select class="form-select" id="d4"><option>Condo</option></select></div>
+        <div class="col-md-4"><span class="form-label d-block">Segmented</span><div class="segmented"><input type="radio" class="btn-check" name="sg" id="sg1" checked><label class="btn" for="sg1">Rent</label><input type="radio" class="btn-check" name="sg" id="sg2"><label class="btn" for="sg2">Buy</label></div></div>
+        <div class="col-md-4"><span class="form-label d-block">Checks</span><div class="form-check"><input class="form-check-input" type="checkbox" id="ck1" checked><label class="form-check-label" for="ck1">Checkbox</label></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="ck2" checked><label class="form-check-label" for="ck2">Switch</label></div></div>
+        <div class="col-12"><div class="error-summary" role="alert"><h2>Please fix 2 things</h2><ul class="mb-0 ps-3"><li><a href="#d2">Enter a valid email address</a></li><li><a href="#d1">Enter your full name</a></li></ul></div>
+          <p class="small text-muted mt-2 mb-0">Label above every field (never placeholder-only). Validate on blur. On submit: summary at the top, focused, linking to each field; message under each field too.</p></div>
+      </div></section>
+
+    <section class="ds-h" aria-labelledby="c-badge"><h2 class="h4 mb-3" id="c-badge">Badges and chips</h2>
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3"><span class="badge-listing badge-rent">For rent</span><span class="badge-listing badge-sale">For sale</span>
+        <span id="statuses" class="d-flex flex-wrap gap-2"></span></div>
+      <div class="chip-list"><button class="chip">Kuala Lumpur <i class="bi bi-x" aria-hidden="true"></i></button><button class="chip">Condo <i class="bi bi-x" aria-hidden="true"></i></button><button class="chip">2+ bedrooms <i class="bi bi-x" aria-hidden="true"></i></button></div></section>
+
+    <section class="ds-h" aria-labelledby="c-card"><h2 class="h4 mb-3" id="c-card">Property card</h2>
+      <div class="row row-cols-1 row-cols-md-3 g-4" id="cards"></div>
+      <p class="small text-muted mt-2 mb-0">Available · Rented (greyed, strip) · Loading. The whole card is one link; heart and Compare sit above it. Hover lifts 2px and zooms the photo 3%.</p></section>
+
+    <section class="ds-h" aria-labelledby="c-state"><h2 class="h4 mb-3" id="c-state">Empty, error and feedback</h2>
+      <div class="row g-4"><div class="col-lg-6" id="st-empty"></div><div class="col-lg-6 d-grid gap-3 align-content-start" id="st-error">
+        <div class="alert alert-success d-flex gap-2 mb-0" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i>Profile saved.</div>
+        <div class="alert alert-warning d-flex gap-2 mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Sorry, this day was just booked. Pick another day.</div>
+        <button class="btn btn-outline-secondary" onclick="ROB.toast('Saved to Liked','heart-fill')">Show a toast</button></div></div></section>
+
+    <section class="ds-h" aria-labelledby="c-tok"><h2 class="h4 mb-3" id="c-tok">Spacing, radius, breakpoints</h2>
+      <div class="row g-4 small"><div class="col-md-4"><div class="panel-surface"><strong>Spacing</strong> (Bootstrap scale)<br>1 = 4px · 2 = 8px · 3 = 16px · 4 = 24px · 5 = 48px. Sections 64px top/bottom.</div></div>
+        <div class="col-md-4"><div class="panel-surface"><strong>Radius</strong><br>8px controls · 12px cards and panels · 999px chips and status badges.</div></div>
+        <div class="col-md-4"><div class="panel-surface"><strong>Breakpoints</strong><br>Designed at 1440 and 390. Grid: 3 cards ≥ 992, 2 cards ≥ 576, 1 below. Container 1320.</div></div></div></section>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const sw = [['Primary', '#0F766E', 'Buttons, links · 5.5:1'], ['Primary hover', '#115E59', '7.6:1'], ['Primary subtle', '#CCFBF1', 'Chips, selected'], ['For sale', '#0369A1', 'Badge · 5.9:1'], ['For rent', '#B45309', 'Badge · 5.0:1'], ['Ink', '#0F172A', 'Text · 17.9:1'],
+      ['Muted', '#475569', 'Secondary text · 7.6:1'], ['Input border', '#64748B', 'Fields · 4.8:1'], ['Line', '#E2E8F0', 'Card borders'], ['Surface', '#F8FAFC', 'Panels'], ['Success', '#15803D', 'WhatsApp, OK · 5.0:1'], ['Danger', '#DC2626', 'Errors · 4.8:1']]
+    document.getElementById('swatches').innerHTML = sw.map(([n, h, u]) => `<div class="col"><div class="swatch"><div class="chip-c" style="background:${h}"></div><div class="meta"><strong>${n}</strong><br><code>${h}</code><br><span class="text-muted">${u}</span></div></div></div>`).join('')
+    document.getElementById('statuses').innerHTML = ['pending', 'confirmed', 'declined', 'cancelled', 'available', 'rented'].map(ROB.statusBadge).join('')
+    document.getElementById('cards').innerHTML = [ROB.card(ROB.byId(1)), ROB.card(ROB.byId(7)), ROB.cardSkeleton()].map((c) => `<div class="col">${c}</div>`).join('')
+    document.getElementById('st-empty').innerHTML = ROB.empty({ icon: 'search', title: 'No homes match these filters', text: 'Try a wider price range or another city.', action: '<button class="btn btn-primary">Clear all filters</button>' })
+    document.getElementById('st-error').insertAdjacentHTML('afterbegin', ROB.errorBox())
+  </script>
+</body>
+</html>

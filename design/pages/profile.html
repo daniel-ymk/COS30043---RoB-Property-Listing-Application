@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profile · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="profile" data-title="Profile" data-roles="viewer,owner" data-states="saved,errors">
+  <div id="nav"></div>
+  <main class="container" style="max-width:760px">
+    <div class="page-head"><h1 class="h2 mb-1">Profile</h1><p class="text-muted mb-0">Your name and WhatsApp number are shown to the people you contact.</p></div>
+    <div id="notice"></div>
+
+    <div class="panel mb-4">
+      <div class="d-flex align-items-center gap-3 mb-4"><span class="avatar" style="width:64px;height:64px;font-size:1.25rem" id="av"></span>
+        <div><div class="h5 mb-0" id="nm"></div><div class="text-muted" id="role"></div></div></div>
+      <form id="form" novalidate>
+        <div class="mb-3"><label class="form-label" for="name">Full name</label><input class="form-control" id="name" aria-describedby="name-err"><div class="invalid-feedback" id="name-err">Enter your full name (2–100 characters)</div></div>
+        <div class="mb-3"><label class="form-label" for="email">Email</label><input class="form-control" id="email" readonly disabled aria-describedby="email-help"><div class="form-text" id="email-help">Email can't be changed.</div></div>
+        <div class="mb-4"><label class="form-label" for="phone">WhatsApp number <span class="text-muted fw-normal" id="opt">(optional)</span></label>
+          <div class="input-group has-validation"><span class="input-group-text">+</span><input class="form-control" id="phone" inputmode="numeric" placeholder="60123456789" aria-describedby="phone-help phone-err">
+          <div class="invalid-feedback" id="phone-err">Use digits only, starting with the country code (8–15 digits)</div></div>
+          <div class="form-text" id="phone-help">Include the country code, e.g. 60 for Malaysia.</div></div>
+        <div class="d-flex gap-2 justify-content-end"><button class="btn btn-outline-secondary" type="reset">Discard changes</button><button class="btn btn-primary" type="submit">Save changes</button></div>
+      </form>
+    </div>
+
+    <details class="dev-notes">
+      <summary>Dev notes · Profile (/profile) · Zin</summary>
+      <ul class="mb-0 mt-2">
+        <li><code>PUT profile.php {full_name, phone}</code> → update the Pinia auth store with the returned user, so the navbar name changes at once.</li>
+        <li>Phone is required for owners (renters need it to reach them), optional for viewers. Email, role and password are out of scope.</li>
+        <li>States: "saved" shows the green alert, "errors" shows field errors from a <code>422</code>.</li>
+      </ul>
+    </details>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const u = ROB.user
+    document.getElementById('av').textContent = ROB.initials(u.full_name)
+    document.getElementById('nm').textContent = u.full_name
+    document.getElementById('role').textContent = u.role === 'owner' ? 'Owner account' : 'Viewer account'
+    document.getElementById('name').value = u.full_name
+    document.getElementById('email').value = u.email
+    document.getElementById('phone').value = u.phone || ''
+    if (u.role === 'owner') document.getElementById('opt').textContent = ''
+    if (ROB.state === 'saved') document.getElementById('notice').innerHTML = '<div class="alert alert-success d-flex gap-2" role="status"><i class="bi bi-check-circle" aria-hidden="true"></i>Profile saved.</div>'
+    if (ROB.state === 'errors') { document.getElementById('name').value = 'A'; document.getElementById('phone').value = '012-345'; ['name', 'phone'].forEach((i) => document.getElementById(i).classList.add('is-invalid')) }
+    document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); ROB.toast('Profile saved') })
+  </script>
+</body>
+</html>

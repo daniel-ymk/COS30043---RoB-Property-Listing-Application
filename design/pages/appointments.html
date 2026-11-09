@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My viewings · RoB Property</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../css/rob.css">
+</head>
+<body data-page="appointments" data-title="My viewings" data-roles="viewer,owner" data-states="loading,empty,error">
+  <div id="nav"></div>
+  <main class="container">
+    <div class="page-head"><h1 class="h2 mb-1">My viewings</h1><p class="text-muted mb-0">Viewings you've requested. Owners confirm or decline each one.</p></div>
+
+    <ul class="nav nav-pills mb-4 gap-2" id="tabs" aria-label="Filter viewings">
+      <li class="nav-item"><button class="nav-link active" data-filter="upcoming" type="button" aria-pressed="true">Upcoming</button></li>
+      <li class="nav-item"><button class="nav-link" data-filter="past" type="button" aria-pressed="false">Past and cancelled</button></li>
+    </ul>
+    <div id="list" class="d-grid gap-3"></div>
+
+    <!-- Cancel confirm -->
+    <div class="modal fade" id="cancel" tabindex="-1" aria-labelledby="cancel-title" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-body p-4">
+      <h2 class="h5" id="cancel-title">Cancel this viewing?</h2><p class="text-muted">The owner is told, and the day becomes free for other people.</p>
+      <div class="d-flex gap-2 justify-content-end"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep viewing</button><button class="btn btn-danger" data-bs-dismiss="modal" onclick="ROB.toast('Viewing cancelled')">Cancel viewing</button></div>
+    </div></div></div></div>
+
+    <details class="dev-notes">
+      <summary>Dev notes · My viewings (/appointments) · Khant</summary>
+      <ul class="mb-0 mt-2">
+        <li><code>GET appointments.php?as=viewer</code>. Upcoming = pending or confirmed with a future date; the rest go under "Past and cancelled".</li>
+        <li>Cancel: <code>PATCH appointments.php?id= {action:"cancel"}</code>, allowed from pending or confirmed; confirm first in a modal.</li>
+        <li>Confirmed viewings show the owner's WhatsApp so the viewer can message them on the day.</li>
+      </ul>
+    </details>
+  </main>
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/rob.js"></script>
+  <script>
+    const mine = APPOINTMENTS.filter((a) => a.viewer === 'Sarah Tan').concat([APPOINTMENTS[5]])
+    const list = document.getElementById('list')
+    function render(filter) {
+      if (ROB.state === 'loading') return (list.innerHTML = Array(3).fill('<div class="panel d-flex gap-3" aria-hidden="true"><div class="skeleton" style="width:120px;height:90px"></div><div class="flex-grow-1"><div class="skeleton mb-2" style="height:20px;width:40%"></div><div class="skeleton" style="height:18px;width:70%"></div></div></div>').join(''))
+      if (ROB.state === 'error') return (list.innerHTML = ROB.errorBox('viewings'))
+      const items = ROB.state === 'empty' ? [] : mine.filter((a) => (filter === 'upcoming') === ['pending', 'confirmed'].includes(a.status))
+      if (!items.length) return (list.innerHTML = ROB.empty({ icon: 'calendar-event', title: 'No viewings booked', text: 'Open any listing and pick a free day to book a viewing.', action: `<a class="btn btn-primary" href="${ROB.link('listings')}">Find a home</a>` }))
+      list.innerHTML = items.map((a) => {
+        const p = ROB.byId(a.property_id)
+        const d = new Date(a.viewing_date + 'T00:00:00')
+        const canCancel = ['pending', 'confirmed'].includes(a.status)
+        return `<article class="panel p-3"><div class="row g-3 align-items-center">
+          <div class="col-auto"><div class="text-center border rounded-3 px-3 py-2" style="min-width:76px"><div class="small text-muted text-uppercase fw-semibold">${d.toLocaleDateString('en-GB', { month: 'short' })}</div><div class="h3 mb-0">${d.getDate()}</div><div class="small text-muted">${d.toLocaleDateString('en-GB', { weekday: 'short' })}</div></div></div>
+          <div class="col-auto d-none d-sm-block"><img class="list-thumb" style="width:120px;height:90px" src="${p.cover_image}" alt=""></div>
+          <div class="col">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-1">${ROB.statusBadge(a.status)}<span class="text-muted small"><i class="bi bi-clock" aria-hidden="true"></i> ${ROB.fmtTime(a.viewing_time)}</span></div>
+            <a class="fw-semibold text-body text-decoration-none fs-5" href="${ROB.link('property', '&id=' + p.property_id)}">${p.title}</a>
+            <div class="text-muted small">${p.address}, ${p.city} · Owner ${p.ownerObj.full_name}</div>
+            ${a.message ? `<div class="small mt-1"><i class="bi bi-chat-left-text text-muted" aria-hidden="true"></i> "${a.message}"</div>` : ''}
+          </div>
+          <div class="col-12 col-md-auto d-flex gap-2">
+            ${a.status === 'confirmed' ? `<a class="btn btn-whatsapp btn-sm" href="https://wa.me/${p.ownerObj.phone}" target="_blank" rel="noopener"><i class="bi bi-whatsapp" aria-hidden="true"></i>Message owner</a>` : ''}
+            ${canCancel ? '<button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#cancel">Cancel</button>' : ''}
+            ${a.status === 'declined' ? `<a class="btn btn-outline-primary btn-sm" href="${ROB.link('property', '&id=' + p.property_id)}">Pick another day</a>` : ''}
+          </div></div></article>`
+      }).join('')
+    }
+    document.getElementById('tabs').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-filter]'); if (!b) return
+      document.querySelectorAll('#tabs .nav-link').forEach((x) => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b) })
+      render(b.dataset.filter)
+    })
+    render('upcoming')
+  </script>
+</body>
+</html>
