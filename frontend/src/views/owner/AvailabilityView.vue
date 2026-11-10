@@ -1,19 +1,30 @@
 <script setup>
+// Owner's "Viewing days" page. Data flow:
+//   API (listMySlots) -> slots -> events -> calendarOptions -> <FullCalendar>
+//   -> owner clicks a day -> form -> API -> slots changes -> the calendar redraws
 import { ref, computed, nextTick, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+// FullCalendar's official Vue 3 component (v7). It is configured through one prop, `options`.
+import FullCalendar from '@fullcalendar/vue3'
+import classicThemePlugin from '@fullcalendar/vue3/themes/classic' // the look (theme)
+import dayGridPlugin from '@fullcalendar/vue3/daygrid' // the month view
+import interactionPlugin from '@fullcalendar/vue3/interaction' // makes dateClick work
+// Theme CSS: without these files the calendar shows as an unstyled list of dates
+import '@fullcalendar/vue3/skeleton.css'
+import '@fullcalendar/vue3/themes/classic/theme.css'
+import '@fullcalendar/vue3/themes/classic/palette.css'
 import { listMySlots, addSlot, deleteSlot } from '@/api/viewings'
 import { useAsync } from '@/composables/useAsync'
 import { useToastStore } from '@/stores/toast'
 import { fmtDate, fmtTime, isoDate } from '@/utils/format'
 import ErrorAlert from '@/components/ErrorAlert.vue'
 
-const MONTHS_AHEAD = 5 // the calendar shows this month and the next 5
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const MONTHS_AHEAD = 3 // owners can add days up to the end of the 3rd month from now
 
+const router = useRouter()
 const toast = useToastStore()
 const today = isoDate()
 const now = new Date()
-const monthOffset = ref(0)
 
 const result = useAsync(async () => ({ data: await listMySlots() }))
 const slots = ref([])
@@ -25,60 +36,90 @@ const dateInput = ref(null)
 const formError = ref('') // client check or 409 from the server
 const sending = ref(false)
 
-const month = computed(() => new Date(now.getFullYear(), now.getMonth() + monthOffset.value, 1))
-const monthTitle = computed(() =>
-  month.value.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
-)
+// First day the calendar shows, the last day the owner may pick, and the day after it
+// (FullCalendar's range end is exclusive)
+const monthStart = isoDate(new Date(now.getFullYear(), now.getMonth(), 1))
 const maxDate = computed(() =>
   isoDate(new Date(now.getFullYear(), now.getMonth() + MONTHS_AHEAD + 1, 0)),
 )
-
-// Day cells for the shown month, Monday first; null = blank before day 1
-const cells = computed(() => {
-  const first = month.value
-  const blanks = (first.getDay() + 6) % 7
-  const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
-  const list = Array(blanks).fill(null)
-  for (let d = 1; d <= days; d++) {
-    const iso = isoDate(new Date(first.getFullYear(), first.getMonth(), d))
-    const slot = byDate.value[iso]
-    const past = iso < today
-    list.push({
-      day: d,
-      iso,
-      slot,
-      past,
-      kind: past ? 'past' : slot ? (slot.is_booked ? 'booked' : 'free') : '',
-    })
-  }
-  return list
-})
+const rangeEnd = computed(() =>
+  isoDate(new Date(now.getFullYear(), now.getMonth() + MONTHS_AHEAD + 1, 1)),
+)
 
 const upcoming = computed(() => slots.value.filter((s) => s.viewing_date >= today))
 
-function cellLabel(cell) {
-  const when = fmtDate(cell.iso, { weekday: 'long', day: 'numeric', month: 'long' })
-  if (cell.past) return `${when}, past`
-  if (!cell.slot) return `${when}, no viewing. Choose to add one.`
-  const at = fmtTime(cell.slot.viewing_time)
-  return cell.slot.is_booked
-    ? `${when}, booked at ${at}. Open the request.`
-    : `${when}, free at ${at}`
+// ---------- FullCalendar ----------
+
+// Each viewing day becomes one calendar event. The slot rides along in
+// extendedProps so the click handler and the eventContent slot can read it.
+const events = computed(() =>
+  slots.value.map((slot) => ({
+    id: String(slot.slot_id),
+    start: `${slot.viewing_date}T${slot.viewing_time}`,
+    title: slot.is_booked ? 'Booked' : 'Free',
+    className: slot.is_booked ? 'slot-booked' : 'slot-free', // coloured in <style>
+    extendedProps: { slot },
+  })),
+)
+
+// All of FullCalendar's settings, passed as <FullCalendar :options="calendarOptions">.
+// computed, so FullCalendar re-renders whenever `slots` changes (add, remove, undo)
+const calendarOptions = computed(() => ({
+  plugins: [classicThemePlugin, dayGridPlugin, interactionPlugin],
+  initialView: 'dayGridMonth',
+  firstDay: 1, // weeks start on Monday
+  height: 'auto',
+  fixedWeekCount: false,
+  headerToolbar: { start: 'prev', center: 'title', end: 'next' }, // v7 shows none by default
+  // Prev/next stop at this month and at maxDate; days outside the range are disabled
+  validRange: { start: monthStart, end: rangeEnd.value },
+  // Earlier days this month stay visible (greyed) but can't be picked
+  dayCellClass: (info) => (info.isPast ? 'is-past' : ''),
+  eventDisplay: 'block', // a filled box instead of a dot
+  events: events.value,
+  // Callbacks FullCalendar calls when the owner clicks
+  dateClick: onDateClick, // needs interactionPlugin
+  eventClick: onEventClick,
+}))
+
+// Clicking an empty day (or a free one) fills the form so the owner only picks a time.
+// info.dateStr is the clicked day as "YYYY-MM-DD".
+function onDateClick(info) {
+  if (info.dateStr < today) return
+  if (byDate.value[info.dateStr]?.is_booked) openRequests()
+  else pickDay(info.dateStr)
 }
 
-// Clicking a day fills the form so the owner only has to pick a time
-async function pickDay(cell) {
-  date.value = cell.iso
+// Clicking an event: info.event.extendedProps.slot is the slot we attached above
+function onEventClick(info) {
+  const { slot } = info.event.extendedProps
+  if (slot.is_booked) openRequests()
+  else pickDay(slot.viewing_date)
+}
+
+// A booked day belongs to a viewing request, so open the Requests page
+function openRequests() {
+  router.push({ name: 'owner-requests', query: { status: 'all' } })
+}
+
+// Put the chosen day in the form's date box and move the cursor there (after Vue updates the page)
+async function pickDay(iso) {
+  date.value = iso
   formError.value = ''
   await nextTick()
   dateInput.value?.focus()
 }
 
+// ---------- data ----------
+
+// Fetch the owner's days (GET /me/slots); the calendar and the list update from `slots`
 async function load() {
   await result.run()
   slots.value = result.data.value ?? []
 }
 
+// Browser-side form check: returns an error message, or '' if the date and time are valid.
+// The PHP API checks the same rules again.
 function check() {
   if (!date.value || date.value < today) return 'Pick today or a later date'
   if (date.value > maxDate.value) return `Pick a date up to ${fmtDate(maxDate.value)}`
@@ -88,6 +129,8 @@ function check() {
   return ''
 }
 
+// Save a viewing day (POST /me/slots). The form calls it with its own values; Undo calls it
+// with the removed day and quiet: true (no form checks, form left as it is).
 async function add(viewingDate = date.value, viewingTime = time.value, { quiet = false } = {}) {
   formError.value = quiet ? '' : check()
   if (formError.value) return
@@ -113,6 +156,7 @@ async function add(viewingDate = date.value, viewingTime = time.value, { quiet =
   }
 }
 
+// Delete a free day (DELETE /me/slots/:id) and offer Undo in the pop-up message
 async function remove(slot) {
   try {
     await deleteSlot(slot.slot_id)
@@ -154,63 +198,38 @@ onMounted(load)
     <div v-else class="row g-4">
       <section class="col-lg-8" aria-labelledby="cal-title">
         <div class="panel">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <button
-              class="btn btn-outline-secondary btn-icon"
-              type="button"
-              aria-label="Previous month"
-              :disabled="monthOffset === 0"
-              @click="monthOffset--"
-            >
-              <i class="bi bi-chevron-left" aria-hidden="true"></i>
-            </button>
-            <h2 id="cal-title" class="h5 mb-0" aria-live="polite">{{ monthTitle }}</h2>
-            <button
-              class="btn btn-outline-secondary btn-icon"
-              type="button"
-              aria-label="Next month"
-              :disabled="monthOffset === MONTHS_AHEAD"
-              @click="monthOffset++"
-            >
-              <i class="bi bi-chevron-right" aria-hidden="true"></i>
-            </button>
-          </div>
+          <h2 id="cal-title" class="visually-hidden">Calendar of your viewing days</h2>
 
           <div
             v-if="result.loading.value && !slots.length"
             class="skeleton"
             style="height: 320px"
           ></div>
-          <div v-else class="cal" role="group" aria-labelledby="cal-title">
-            <div v-for="d in WEEKDAYS" :key="d" class="dow" aria-hidden="true">{{ d }}</div>
-            <template v-for="(cell, i) in cells" :key="cell?.iso ?? `blank-${i}`">
-              <div v-if="!cell" class="empty"></div>
-              <RouterLink
-                v-else-if="cell.kind === 'booked'"
-                class="day booked"
-                :to="{ name: 'owner-requests', query: { status: 'all' } }"
-                :aria-label="cellLabel(cell)"
-              >
-                {{ cell.day }}<small>Booked</small>
-              </RouterLink>
-              <button
-                v-else
-                class="day"
-                :class="[cell.kind, { today: cell.iso === today, picked: cell.iso === date }]"
-                type="button"
-                :disabled="cell.past"
-                :aria-label="cellLabel(cell)"
-                :aria-pressed="cell.iso === date ? 'true' : 'false'"
-                @click="pickDay(cell)"
-              >
-                {{ cell.day }}<small v-if="cell.slot">{{ fmtTime(cell.slot.viewing_time) }}</small>
-              </button>
-            </template>
+          <div v-else class="availability-cal">
+            <!-- The FullCalendar component: every setting and event comes in through :options -->
+            <FullCalendar :options="calendarOptions">
+              <!-- Vue named slot: how each viewing day is drawn inside its date cell.
+                   FullCalendar passes `arg` for each event; arg.event.extendedProps.slot is
+                   our slot data. -->
+              <template #eventContent="arg">
+                <span class="slot-pill">
+                  <i
+                    class="bi"
+                    :class="arg.event.extendedProps.slot.is_booked ? 'bi-person-check' : 'bi-clock'"
+                    aria-hidden="true"
+                  ></i>
+                  <span class="slot-time">{{
+                    fmtTime(arg.event.extendedProps.slot.viewing_time)
+                  }}</span>
+                  <span class="slot-label">{{ arg.event.title }}</span>
+                </span>
+              </template>
+            </FullCalendar>
           </div>
 
           <div class="d-flex flex-wrap gap-3 mt-3 small text-muted">
             <span><span class="key free"></span>Free for viewings</span>
-            <span><span class="key booked"></span>Booked</span>
+            <span><span class="key booked"></span>Booked (opens the request)</span>
             <span><span class="key past"></span>Past</span>
           </div>
         </div>
@@ -298,70 +317,78 @@ onMounted(load)
 </template>
 
 <style scoped>
-.cal {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 3px;
+/* Map FullCalendar's classic theme onto the RoB colours. The theme reads these
+   CSS variables, and custom properties inherit, so setting them here is enough. */
+.availability-cal {
+  --fc-classic-primary: var(--rob-primary);
+  --fc-classic-button: var(--rob-primary);
+  --fc-classic-button-border: var(--rob-primary);
+  --fc-classic-button-strong: var(--rob-primary-hover);
+  --fc-classic-button-strong-border: var(--rob-primary-hover);
+  --fc-classic-today: color-mix(in srgb, var(--rob-primary-subtle) 45%, transparent);
+  --fc-classic-border: var(--rob-line);
+  --fc-classic-foreground: var(--rob-ink);
+  --fc-classic-muted-foreground: var(--rob-muted);
 }
-.dow {
-  text-align: center;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--rob-muted);
-  padding-bottom: 0.25rem;
+
+/* Events are rendered by FullCalendar, outside this component's scope, so use :deep() */
+.availability-cal :deep(.slot-free) {
+  --fc-classic-event: var(--rob-primary-subtle);
+  --fc-classic-event-contrast: var(--rob-primary-hover);
+  border: 1px solid var(--rob-primary);
+  cursor: pointer;
 }
-.day {
-  min-height: 44px;
-  min-width: 0;
-  border: 1px solid var(--rob-line);
-  border-radius: var(--rob-radius);
-  padding: 0.25rem;
-  font-weight: 600;
-  background: #fff;
-  color: var(--rob-ink);
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-}
-.day:hover:not(:disabled) {
-  border-color: var(--rob-primary);
-}
-.day.today {
-  box-shadow: inset 0 0 0 2px var(--rob-ink);
-}
-.day.picked {
-  box-shadow: inset 0 0 0 2px var(--rob-primary);
-}
-.day.past,
-.day:disabled {
-  color: #94a3b8;
+.availability-cal :deep(.is-past) {
   background: var(--rob-surface);
+  color: #94a3b8;
+  cursor: not-allowed;
 }
-.day.free {
-  background: var(--rob-primary-subtle);
-  border-color: var(--rob-primary);
-  color: var(--rob-primary-hover);
+.availability-cal :deep(.slot-booked) {
+  --fc-classic-event: var(--rob-sale-subtle);
+  --fc-classic-event-contrast: #075985;
+  border: 1px solid var(--rob-sale);
+  cursor: pointer;
 }
-.day.booked {
-  background: var(--rob-sale-subtle);
-  border-color: var(--rob-sale);
-  color: #075985;
-}
-/* phones: a dot instead of the time */
-.day small {
-  display: block;
-  font-size: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
+
+.slot-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
   overflow: hidden;
 }
-.empty {
-  visibility: hidden;
+/* Phones show only the icon, wider screens add the time, the widest add "Free"/"Booked".
+   Hidden text stays readable by screen readers (same idea as Bootstrap's .visually-hidden). */
+.slot-time,
+.slot-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
+@media (min-width: 576px) {
+  .slot-time {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+  }
+}
+@media (min-width: 1400px) {
+  .slot-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    font-weight: 400;
+  }
+}
+
 .key {
   display: inline-block;
   width: 14px;
@@ -379,23 +406,5 @@ onMounted(load)
 .key.booked {
   background: var(--rob-sale-subtle);
   border-color: var(--rob-sale);
-}
-@media (min-width: 576px) {
-  .cal {
-    gap: 6px;
-  }
-  .day {
-    aspect-ratio: 1 / 0.8;
-    min-height: 56px;
-    padding: 0.375rem 0.5rem;
-    align-items: flex-start;
-  }
-  .day small {
-    width: auto;
-    height: auto;
-    background: none;
-    font-size: 0.6875rem;
-    font-weight: 500;
-  }
 }
 </style>
